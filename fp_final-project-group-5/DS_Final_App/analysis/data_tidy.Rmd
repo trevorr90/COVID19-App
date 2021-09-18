@@ -1,0 +1,161 @@
+---
+title: "data_tidy"
+author: "Liu Chi Yun"
+date: "4/25/2021"
+output: pdf_document
+---
+
+```{r message=FALSE}
+library(tidyverse)
+library(lubridate)
+library(tidycensus)
+```
+
+
+```{r}
+# read rds 
+readr::read_rds("../data/covid19_data.rds") -> 
+  covid19_data
+# clean data
+covid19_data %>% 
+  na_if("Missing") %>% 
+  na_if("Unknown") %>% 
+  mutate(case_month = ym(case_month)) %>% 
+  mutate(age_group = str_replace(age_group, "to", "-"),
+         age_group = str_replace(age_group, "years", "")) %>% 
+  mutate(age_group = as.factor(age_group),
+         sex = as.factor(sex),
+         hosp_yn = as.factor(hosp_yn),
+         icu_yn = as.factor(icu_yn),
+         death_yn = as.factor(death_yn),
+         underlying_conditions_yn = as.factor(underlying_conditions_yn))  ->
+  covid19_tidy
+```
+
+
+```{r}
+# tidy data
+# merge long/lat for shiny map
+# only focus on the US 50 + 1 (DC) states
+# long/ lat data from kaggle [link]:
+# https://www.kaggle.com/washimahmed/usa-latlong-for-state-abbreviations
+long_lat <- read_csv("../data/statelatlong.csv") 
+  
+long_lat %>% 
+  rename(State = City, `State(Abbrev)` = State)-> long_lat
+
+covid19_tidy %>% 
+  left_join(long_lat, by = c("res_state" = "State(Abbrev)")) %>% 
+  filter(res_state != "GU", res_state !=  "VI", res_state != "PR") -> covid19_tidy
+
+# check if we already removed GU, VI, PR, which are outside the US territories
+#setdiff(unique(covid19_tidy$res_state), unique(long_lat$abbr_state))
+#setdiff(unique(long_lat$abbr_state), unique(covid19_tidy$res_state))
+
+# only keep 2020 data
+covid19_tidy %>% 
+  select(-res_county) %>% 
+  filter(case_month != "2021-01-01") %>% 
+  filter(case_month != "2021-02-01") %>% 
+  filter(case_month != "2021-03-01") ->
+  covid19_tidy
+```
+
+```{r}
+# rename data
+covid19_tidy %>% 
+  rename(`Date(Monthly)` = case_month, 
+         `State(Abbrev)` = res_state, 
+         Age = age_group, 
+         Sex = sex, 
+         Race = race, 
+         Ethnicity = ethnicity, 
+         `Identified Process` = process, 
+         `Case Status` = current_status, 
+         `Symptom Status` = symptom_status, 
+         Hospitalization = hosp_yn, 
+         ICU = icu_yn, 
+         Death = death_yn, 
+         `Underlying Conditions`= underlying_conditions_yn) ->covid19_tidy
+covid19_tidy %>%
+  saveRDS("../data/covid19_tidy.rds")
+```
+
+
+
+```{r}
+# for data analysis, lm and plot
+# cases
+covid19_tidy %>% 
+  group_by(`State(Abbrev)`, `Symptom Status`, Sex, Race, Ethnicity, Age) %>% 
+  count() %>% 
+  rename("Case" = "n") ->
+  covid_lm_case
+
+# new data
+covid19_tidy %>% 
+  group_by(`State(Abbrev)`, `Symptom Status`, Sex, Race, Ethnicity, Age, Death) %>% 
+  count() %>% 
+  pivot_wider(names_from = Death, values_from = n) %>% 
+  rename("Death" = "Yes",
+         "Recovery" = "No") %>% 
+  select(-'NA') %>% 
+  left_join(covid_lm_case) ->
+  covid19_lmdf
+
+covid19_lmdf %>% 
+  glimpse()
+
+covid19_lmdf %>% 
+  mutate(`Symptom Status` = as.factor(`Symptom Status`),
+         Race = as.factor(Race),
+         Ethnicity = as.factor(Ethnicity)) ->
+  covid19_lmdf
+
+covid19_lmdf %>% 
+  saveRDS("../data/covid19_lmdf.rds")
+```
+
+```{r}
+# count death cases
+covid19_tidy %>%
+  group_by(State) %>% 
+  count(Death) %>% 
+  pivot_wider(names_from = Death, values_from = n) %>% 
+  rename(`Number of Death` = Yes, `Number of Recovery` = No, `Status Unknown` = `NA`)->
+  covid19_n_death
+
+# merge data
+covid19_tidy %>%
+  group_by(State, Latitude, Longitude) %>%
+  summarize(`Number of Confirmed` = n()) %>% 
+  left_join(covid19_n_death, by = "State") %>% 
+  ungroup() %>% 
+  mutate(`Death Rate(%)` = round((`Number of Death` / `Number of Confirmed`)*100, digits = 2),
+             `Recovery Rate(%)` = round((`Number of Recovery` / `Number of Confirmed`)*100, digits = 2),
+             `Rank(Confirmed)` = rank(-`Number of Confirmed`, na.last = TRUE),
+             `Rank(Death Rate)` = rank(`Death Rate(%)`, ties.method = "first", na.last = TRUE))->covid19_geom
+
+# filter out fips code in the beginning since data is too large, merge only state fips here
+data("fips_codes")
+state_fips <- fips_codes %>% 
+  select(state_name, state_code) %>% 
+  unique()
+
+covid19_geom %>% 
+  left_join(state_fips, by = c("State" = "state_name")) %>% 
+  select(state_code, everything()) %>% 
+  rename(fips = state_code)->covid19_geom
+
+# save to rds
+covid19_n_death %>% 
+  saveRDS("../data/covid19_n_death.rds")
+
+covid19_geom %>% 
+  saveRDS("../data/covid19_geom.rds")
+```
+
+
+
+
+

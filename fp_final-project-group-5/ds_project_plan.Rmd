@@ -1,0 +1,76 @@
+---
+title: "Shiny App Project Plan"
+author: "Trevor, Sihyuan and Chiyun"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Project Plan (10)
+
+* App Title and Names of your group members (1)
+    + App Title: Potential health issue on the people who died with covid-19
+    + Members: Trevor K Richardson, Sih-Yuan Han, Chi-Yun Liu
+    + Target User: People who are interested in the impact of covid with cross reference of chronic diseases based on map visualization
+    + Concept for the Shiny App: We expect that this app can show the information to users about how the confirmed cases and/or deaths toll of covid-19 change under the given condition. For example, since comorbidities are the cause of death for the majority of COVID-19 deaths, we want to see the proportion of deaths with a given comorbidity.
+
+* Description of the problem to be analyzed in the Shiny App (1)
+    + Which comorbidity has a higher risk of death when getting covid?
+    + Does age affect the death rate when getting covid?
+    + Does education affect the death rate when getting covid?
+    + Does each state’s lockdown policies work?
+    
+* Proposed data sources (1)
+    + Data from CDC  
+      1. https://data.cdc.gov/NCHS/Conditions-contributing-to-deaths-involving-corona/hk9y-quqm  
+      2. https://data.cdc.gov/Case-Surveillance/COVID-19-Case-Surveillance-Public-Use-Data/vbim-akqf  
+      3. https://data.cdc.gov/NCHS/AH-Provisional-COVID-19-Deaths-by-Race-and-Educati/i6ej-9eac
+
+* Overall Layout (1)
+    + For the first tab, we may use a US map to be a basic visual of the dashboard to show any input that the user selects
+    + For the second tab, we may use a table to show the analysis in details(table and/or plot)
+    + For the third tab, we may provide linear model
+    + For the last tab, we plan to add some info of our data and the purpose of making this app
+
+* Data Analysis and Visualization with User Choices and Results (2)
+    + User interface
+      1. Choice of the interest of which chronic diseases’ data
+      2. Choice of before and after lockdown (different by states)
+      3. Choice of before and after holidays’ periods
+      4. Input of customized start and end date of interested cases data
+    
+    + Server
+      1. Output some plots
+      2. Output a map
+      3. Output some statistical summary
+
+* Statistical Modeling with User Choices and Results (2)
+    + ANOVA test
+    + Does chronic disease affect the death rate?
+    + Does a specific race have a higher death rate?
+    + Display qq plot, residual plot and summary of linear model
+
+* Allocation of Responsibilities for the team (1)
+    + Trevor K Richardson: tidy data, tab3
+    + Sih-Yuan Han: tidy data, tab2
+    + Chi-Yun Liu: tidy data, tab1
+
+* Project Steps/Schedule (1)
+    + 4/5 
+      - data clean and tidy
+      - ui ready
+    
+    + 4/12
+      - server version 1
+    
+    + 4/19
+      - server version 2
+    
+    + 4/26
+      - server version 3 / test overall app 
+    
+    + 5/3 
+      - Submit HTML and .Rmd on GitHub and a note in Canvas
+      - Submit Complete Repo on GitHub and a note in Canvas
+      - Presentations
+    
